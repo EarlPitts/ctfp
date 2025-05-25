@@ -73,3 +73,57 @@ module ListFunctor where
         (fmap f ∘ fmap g) (x ∷ xs)
             ∎
     
+
+module ReaderFunctor where
+
+    id : {A : Set} → A → A
+    id x = x
+
+    record Reader (R A : Set) : Set where
+      constructor reader
+      field
+        runReader : R → A
+
+    fmap : ∀ {r a b : Set} → (a → b) → Reader r a → Reader r b
+    fmap f ra = reader (f ∘ (Reader.runReader ra))
+
+    -- Functor laws proofs
+    fmap-id : ∀ {R A : Set} → (ra : Reader R A) → fmap id ra ≡ id ra
+    fmap-id ra = 
+        fmap id ra
+            ≡≡ -- def of fmap, id and reader
+        reader ((λ x → x) ∘ (Reader.runReader ra))
+            ≡≡ -- def of comp
+        reader (λ x → (Reader.runReader ra) x)
+            ≡≡ -- eta
+        reader (Reader.runReader ra)
+            ≡≡ -- eta?
+        ra
+            ≡≡ -- id def
+        id ra
+            ∎
+    
+    fmap-comp : ∀ {R A B C : Set} → (f : B → C) → (g : A → B) → (ra : Reader R A) → fmap (f ∘ g) ra ≡ (fmap f ∘ fmap g) ra
+    fmap-comp f g ra = 
+        fmap (f ∘ g) ra
+            ≡≡ -- def of Reader
+        fmap (f ∘ g) (reader (Reader.runReader ra))
+            ≡≡ -- def of comp
+        fmap (λ x → f (g x)) (reader (Reader.runReader ra))
+            ≡≡ -- def of fmap
+        reader ((λ x → f (g x)) ∘ Reader.runReader ra)
+            ≡≡ -- def of comp
+        reader (λ x → f (g ((Reader.runReader ra) x)))
+            ≡≡ -- def of comp
+        reader (f ∘ (g ∘ (Reader.runReader ra)))
+            ≡≡ -- def of fmap
+        fmap f (reader (g ∘ (Reader.runReader ra)))
+            ≡≡ -- def of fmap
+        fmap f (fmap g (reader (Reader.runReader ra)))
+            ≡≡ -- β red
+        (λ x → fmap f (fmap g x)) (reader (Reader.runReader ra))
+            ≡≡ -- def of Reader
+        (λ x → fmap f (fmap g x)) ra
+            ≡≡ -- def of comp
+        (fmap f ∘ fmap g) ra
+            ∎
