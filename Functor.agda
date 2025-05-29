@@ -4,6 +4,9 @@ module Functor where
 
 open import Lib hiding (Maybe)
 
+id : {A : Set} → A → A
+id x = x
+
 module MaybeFunctor where
     -- Maybe data type definition
     data Maybe (A : Set) : Set where
@@ -76,9 +79,6 @@ module ListFunctor where
 
 module ReaderFunctor where
 
-    id : {A : Set} → A → A
-    id x = x
-
     record Reader (R A : Set) : Set where
       constructor reader
       field
@@ -127,3 +127,61 @@ module ReaderFunctor where
             ≡≡ -- def of comp
         (fmap f ∘ fmap g) ra
             ∎
+
+module PairProfunctor where
+
+  data Pair (A B : Set): Set where
+    P : A → B → Pair A B
+
+  bimap : ∀ { A B C D : Set } → (A → C) → (B → D) → Pair A B → Pair C D
+  bimap f g (P a b) = P (f a) (g b)
+
+  first : ∀ { A B C : Set } → (A → C) → Pair A B → Pair C B
+  first f = bimap f id
+
+  second : ∀ { A B D : Set } → (B → D) → Pair A B → Pair A D
+  second g = bimap id g
+
+  bimap-id : ∀ {A B : Set} → (pab : Pair A B) → bimap id id pab ≡ pab
+  bimap-id (P a b) =
+        bimap id id (P a b)
+    ≡≡ -- Def bimap
+        P (id a) (id b)
+    ≡≡ -- Def id
+        P a b
+    ∎
+
+  bimap-cons : ∀ { A B C D : Set } → (f : A → C) → (g : B → D) → (pab : (Pair A B)) → bimap f g pab ≡ ((first f) ∘ (second g )) pab
+  bimap-cons f g (P a b) =
+    bimap f g (P a b)
+        ≡≡ -- Def of bimap
+    (P (f a) (g b))
+        ≡≡ -- Def of bimap
+    (bimap f id (P a (g b)))
+        ≡≡ -- Def of bimap
+    (bimap f id (bimap id g (P a b)))
+        ≡≡ -- Def of second
+    (bimap f id (second g (P a b)))
+        ≡≡ -- Def of first
+    (first f (second g (P a b)))
+        ≡≡ -- Def of comp
+    (first f ∘ second g) (P a b)
+        ∎
+  
+  bimap-comp : ∀ { A B C D E F : Set } → (f : A → C) → (g : B → D) → (h : C → E) → (i : D → F) → (pab : Pair A B)
+    → bimap (h ∘ f) (i ∘ g) pab ≡ (bimap h i ∘ bimap f g) pab
+  bimap-comp f g h i (P a b) =
+    bimap (h ∘ f) (i ∘ g) (P a b)
+        ≡≡ -- Def of bimap
+    (P ((h ∘ f) a) ((i ∘ g) b))
+        ≡≡ -- Def of comp and eta
+    (P (h (f a)) (i (g b)))
+        ≡≡ -- Def of bimap
+    bimap h i (P (f a) (g b))
+        ≡≡ -- Def of bimap
+    bimap h i (bimap f g (P a b))
+        ≡≡ -- Eta
+    (λ x → (bimap h i (bimap f g x))) (P a b)
+        ≡≡ -- Def of comp
+    (bimap h i ∘ bimap f g) (P a b)
+        ∎
