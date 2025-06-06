@@ -13,7 +13,7 @@ _∘_ f g = λ a → f (g a)
 ∘-left-id : ∀ {A B : Set} → (f : A → B) → (id ∘ f) ≡ f
 ∘-left-id f =
     id ∘ f
-        ≡≡ -- def of comp
+        ≡≡ -- def of ∘
     (λ a → id (f a))
         ≡≡ -- def of id
     (λ a → f a)
@@ -24,10 +24,27 @@ _∘_ f g = λ a → f (g a)
 ∘-right-id : ∀ {A B : Set} → (f : A → B) → (f ∘ id) ≡ f
 ∘-right-id f =
     f ∘ id
-        ≡≡ -- def of comp
+        ≡≡ -- def of ∘
     (λ a → f (id a))
         ≡≡ -- def of id
     (λ a → f a)
         ≡≡ -- η-equality
     f
         ∎
+
+∘-assoc : {A B C D : Set} → (f : A → B) → (g : B → C) → (h : C → D)
+    → h ∘ (g ∘ f) ≡ (h ∘ g) ∘ f
+∘-assoc f g h = 
+    (h ∘ (g ∘ f))
+        ≡≡ -- def of ∘
+    (λ c → h ((g ∘ f) c))
+        ≡≡ -- def of ∘
+    (λ c → h ((λ a → g (f a)) c))
+        ≡≡
+    (λ a → (λ b → (h (g b))) (f a))
+        ≡≡ -- def of ∘
+    (λ a → (h ∘ g) (f a))
+        ≡≡ -- def of ∘
+    (h ∘ g) ∘ f
+        ∎
+
