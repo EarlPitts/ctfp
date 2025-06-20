@@ -1,2 +1,7 @@
 Functor.agdai
 Lib.agdai
+
+target
+.bsp
+scala/project/metals.sbt
+scala/project/project/metals.sbt
