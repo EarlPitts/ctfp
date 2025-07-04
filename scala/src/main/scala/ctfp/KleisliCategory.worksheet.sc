@@ -59,7 +59,7 @@ toUpper("foo bar baz").flatMap(toWords(_)).run
 
 def normalNeg(b: Boolean) = !b
 
-// Applicative style and potin-free style
+// Applicative style and point-free style
 normalNeg(normalNeg(true))
 (normalNeg compose normalNeg)(true)
 
