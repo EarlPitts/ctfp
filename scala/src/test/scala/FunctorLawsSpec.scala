@@ -29,6 +29,10 @@ object Maybe:
       case Nothing => Nothing
       case Just(a) => Just(f(a))
 
+  // // Exercise 1
+  // given badFunctor: Functor[Maybe] with
+  //   def map[A, B](fa: Maybe[A])(f: A => B): Maybe[B] = Nothing
+
 class FunctorLawsSpec
     extends AnyFunSuite
     with FunSuiteDiscipline
