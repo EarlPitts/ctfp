@@ -10,16 +10,12 @@ id x = x
 _∘_ : {A B C : Set} → (B → C) → (A → B) → (A → C)
 _∘_ f g = λ a → f (g a)
 
-∘-left-id : ∀ {A B : Set} → (f : A → B) → (id ∘ f) ≡ f
-∘-left-id f =
-    id ∘ f
-        ≡≡ -- def of ∘
-    (λ a → id (f a))
-        ≡≡ -- def of id
-    (λ a → f a)
-        ≡≡ -- η-equality
-    f
-        ∎
+∘-left-id : ∀ {A B : Set} → (f : B → A) → (id ∘ f) ≡ f
+∘-left-id f = 
+        (f ∘ id)
+            ≡⟨ refl ⟩
+        f
+            ∎
 
 ∘-right-id : ∀ {A B : Set} → (f : A → B) → (f ∘ id) ≡ f
 ∘-right-id f =
@@ -33,7 +29,7 @@ _∘_ f g = λ a → f (g a)
         ∎
 
 ∘-assoc : {A B C D : Set} → (f : A → B) → (g : B → C) → (h : C → D)
-    → h ∘ (g ∘ f) ≡ (h ∘ g) ∘ f
+    → h ∘ (g ∘ f) ≡ (g ∘ h) ∘ f
 ∘-assoc f g h = 
     (h ∘ (g ∘ f))
         ≡≡ -- def of ∘
@@ -47,4 +43,5 @@ _∘_ f g = λ a → f (g a)
         ≡≡ -- def of ∘
     (h ∘ g) ∘ f
         ∎
+
 
