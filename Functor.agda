@@ -185,3 +185,34 @@ module PairProfunctor where
         ≡≡ -- Def of comp
     (bimap h i ∘ bimap f g) (P a b)
         ∎
+
+
+module Iso where
+
+    data Maybe (A : Set) : Set where
+        Just    : A → Maybe A
+        Nothing : Maybe A
+
+    data Either (A B : Set) : Set where
+        Left  : A → Either A B
+        Right : B → Either A B
+
+    data Const (A B : Set) : Set where
+      const : A → Const A B
+
+    data Unit : Set where
+      unit : Unit
+
+    data Identity (A : Set) : Set where
+      identity : A → Identity A
+
+    iso-→ : ∀ {A : Set} → Maybe A → Either (Const Unit A) (Identity A)
+    iso-→ (Just x) = Right (identity x)
+    iso-→ Nothing = Left (const unit)
+
+    iso-← : ∀ {A : Set} → Either (Const Unit A) (Identity A) → Maybe A
+    iso-← (Left (const unit)) = Nothing
+    iso-← (Right (identity a)) = Just a
+
+    -- iso : ∀ {A : Set} → Maybe A ≡ Either (Const Unit A) (Identity A)
+    -- iso = {! iso-→ ∧ iso-←!}
