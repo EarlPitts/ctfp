@@ -15,9 +15,8 @@ import Maybe.*
 // has to be preserverd -> things cannot be broken
 // apart (think continuity in calculus)!
 
-// Collapsing functors:
-// Embedding functors:
-// TODO Const functor, Id functor, embedding functor?
+// Collapsing functors: source > target
+// Embedding functors: source < target
 
 // In programming we usually refer to
 // *Endofunctors* when talking about functors
@@ -60,8 +59,6 @@ Just(2).map(_ + 1).map(_ + 2) ==
 (Nothing: Maybe[Int]).map(_ + 1).map(_ + 2) ==
   (Nothing: Maybe[Int]).map(((n: Int) => n + 1) compose (_ + 2))
 
-Just(2).map(_ + 1)
-
 // We express Functor as a Typeclass
 // Note the higher-kinded type:
 // Functor iself gets a type constructor,
@@ -78,6 +75,7 @@ given Functor[List] with
 
 List(1, 2, 3).map(_ + 1)
 
+// Reader functor instance
 given [R]: Functor[[A] =>> Function1[R, A]] with
   extension [A](fa: Function1[R, A])
     def map[B](f: A => B): Function1[R, B] =
@@ -89,14 +87,32 @@ val g = ((n: Int) => n + 1).map((n: Int) => n + 1)
 g(2)
 
 // Functors as Containers
-// This analogy breaks down in even simple cases
+// This analogy breaks down even in simple cases
 // E.g.: reader functor (it doesn't really "contain" the input)
-// Also there are more obvious examples
+// BUT! If we think of functions as data (lookup table),
+// it still works!
+
+// It may contains the value, or it may contain
+// some recipe for creating it
+
+// Functors are not about "accessing" the value,
+// but "manipulating it"
+
+// Const functor, maps every object from
+// the source to a single objects in the target
+// and maps every morphism to id
+
+case class Const[A,B](value: A):
+  def map[C](f: B => C): Const[A,C] = Const(value)
+
+Const[Int, String](3).map(_ + 2)
+
 // Most people when they say functor what they really mean
 // is a covariant functor
 // Contravariant functors are more like functors that
 // "consume" their type parameter
 
+// https://typelevel.org/cats/typeclasses/contravariant.html
 trait Contravariant[F[_]]:
   extension [A](fa: F[A]) def contramap[B](f: B => A): F[B]
 
@@ -105,10 +121,49 @@ type Predicate[A] = Function1[A, Boolean]
 given Contravariant[Predicate] with
   extension [A](fa: Predicate[A])
     def contramap[B](f: B => A): Predicate[B] =
-      b => fa(f(b))
+      f andThen fa
+      // b => fa(f(b))
 
 val p = ((_ > 10): Predicate[Int]).contramap[String](_.length)
 
 p("sajtsokifli")
 
 // George Wilson - The Extended Functor Family: https://youtu.be/JZPXzJ5tp9w
+
+// Composing Functors
+
+val x = List(Just(2), Just(3)).map(_.map(_ + 2))
+
+object Functor:
+  def apply[F[_]](implicit instance: Functor[F]) = instance
+
+type MaybeList[A] = Maybe[List[A]]
+
+given Functor[MaybeList] with
+  extension [A](fa: MaybeList[A])
+    def map[B](f: A => B): MaybeList[B] =
+      Functor[Maybe].map(fa)(Functor[List].map(_)(f))
+      // Functor[Maybe].map compose Functor[List].map
+
+// We have a category called Cat, where
+// morphisms are functors (they compose,
+// and we have an identity functor), and
+// objects are categories
+
+// Exercises (See functor law proofs in Functor.agda)
+val f: Int => Int = _ + 2
+val h: Int => Int = _ + 1
+val i: Int => Int = _ + 4
+
+f.map(identity)(2) == identity(f(2))
+f.map(h).map(i)(3) == f.map(h compose i)(3)
+
+// f.map(identity)
+// identity compose f
+// f
+// identity(f)
+
+// f.map(g).map(h)
+// h compose f.map(g)
+// h compose g compose f
+// f.map(g compose h)
