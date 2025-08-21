@@ -39,22 +39,21 @@ given Bifunctor[Product] with
     def bimap[B, D](f: A => B, g: C => D): Product[B, D] = fa match
       case Product(a, c) => Product(f(a), g(c))
 
-
 // Problem 2
 type Identity[A] = A
-type Const[A,B] = A
-type MyOption[A] = Either[Const[Unit,A],Identity[A]]
+type Const[A, B] = A
+type MyOption[A] = Either[Const[Unit, A], Identity[A]]
 
 def to[A](a: Option[A]): MyOption[A] = a match
-  case None => Left(())
+  case None    => Left(())
   case Some(a) => Right(a)
 
 def from[A](a: MyOption[A]): Option[A] = a match
-  case Left(_) => None
+  case Left(_)  => None
   case Right(a) => Some(a)
 
 // Problem 3
-enum PreList[+A,+B]:
+enum PreList[+A, +B]:
   case Nil
   case Const(a: A, b: B)
 import PreList.*
@@ -62,5 +61,24 @@ import PreList.*
 given Bifunctor[PreList] with
   extension [A, C](fa: PreList[A, C])
     def bimap[B, D](f: A => B, g: C => D): PreList[B, D] = fa match
-      case Const(a,b) => Const(f(a), g(b))
-      case Nil => Nil
+      case Const(a, b) => Const(f(a), g(b))
+      case Nil         => Nil
+
+// Problem 4
+case class K2[C, A, B](c: C)
+
+given [Z]: Bifunctor[[A, C] =>> K2[Z, A, C]] with
+  extension [A, C](fa: K2[Z, A, C])
+    def bimap[B, D](f: A => B, g: C => D): K2[Z, B, D] = K2(fa.c)
+
+case class Fst[A, B](a: A)
+
+given Bifunctor[Fst] with
+  extension [A, C](fa: Fst[A, C])
+    def bimap[B, D](f: A => B, g: C => D): Fst[B, D] = Fst(f(fa.a))
+
+case class Snd[A, B](b: B)
+
+given Bifunctor[Snd] with
+  extension [A, C](fa: Snd[A, C])
+    def bimap[B, D](f: A => B, g: C => D): Snd[B, D] = Snd(g(fa.b))
