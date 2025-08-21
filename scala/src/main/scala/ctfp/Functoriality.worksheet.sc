@@ -52,3 +52,15 @@ def to[A](a: Option[A]): MyOption[A] = a match
 def from[A](a: MyOption[A]): Option[A] = a match
   case Left(_) => None
   case Right(a) => Some(a)
+
+// Problem 3
+enum PreList[+A,+B]:
+  case Nil
+  case Const(a: A, b: B)
+import PreList.*
+
+given Bifunctor[PreList] with
+  extension [A, C](fa: PreList[A, C])
+    def bimap[B, D](f: A => B, g: C => D): PreList[B, D] = fa match
+      case Const(a,b) => Const(f(a), g(b))
+      case Nil => Nil
