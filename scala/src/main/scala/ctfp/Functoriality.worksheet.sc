@@ -31,6 +31,69 @@ Right(2).bimap(succ, succ)
 Right(2).first(succ)
 Left(2).first(succ)
 
+// Functors compose, and we know that
+// Product and Sum are functorial
+
+// If we can show that the basic buildings
+// blocks of ADTs are functorial, then
+// our ADTs also have to be functorial
+
+// The basic building blocks are
+// Identity and Const
+case class Identity[A](a: A)
+case class Const[A, B](a: A)
+
+// Both of them are functors:
+trait Functor[F[_]]:
+  extension [A](fa: F[A]) def map[B](f: A => B): F[B]
+
+given Functor[Identity] with
+  extension [A](fa: Identity[A])
+    def map[B](f: A => B): Identity[B] = Identity(f(fa.a))
+
+given [C]: Functor[[A] =>> Const[C, A]] with
+  extension [A](fa: Const[C, A])
+    def map[B](f: A => B): Const[C, B] = Const(fa.a)
+
+Identity(2).map(_ + 3)
+Const[Int, Int](2).map(_ + 3)
+
+// We can express the composition of
+// two functors into a bifunctor
+case class BiComp[BF[_, _], FU[_], GU[_], A, B](comp: BF[FU[A], GU[B]])
+
+type BestOption[A, B] = BiComp[Either, [C] =>> Const[Unit, C], Identity, A, B]
+
+object BestOptionIso:
+  def to[A, B](a: Option[A]): BestOption[B, A] = a match
+    case None    => BiComp(Left(Const(())))
+    case Some(a) => BiComp(Right(Identity(a)))
+
+  def from[A, B](a: BestOption[B, A]): Option[A] = a match
+    case BiComp(Left(_))            => None
+    case BiComp(Right(Identity(a))) => Some(a)
+
+// Scala needs just a tiny bit more
+// type annotations than Haskell
+given [BF[_, _]: Bifunctor, FU[_]: Functor, GU[_]: Functor]
+    : Bifunctor[[A, C] =>> BiComp[BF, FU, GU, A, C]] with
+  extension [A, C](fa: BiComp[BF, FU, GU, A, C])
+    def bimap[B, D](f: A => B, g: C => D): BiComp[BF, FU, GU, B, D] =
+      BiComp(fa.comp.bimap((fu: FU[A]) => fu.map(f), (gu: GU[C]) => gu.map(g)))
+
+// We could use this superior version instead
+// of just using Option, but we have to add
+// some annotations
+val someInt = BiComp(Right(Identity(2))): BestOption[Any, Int]
+someInt.second(_ + 2)
+
+// This compositionality of functorial
+// primitives makes it possible to
+// derive functors automatically
+
+// In scala there are libs for this like
+// shapeless and kittens (based on shapeless)
+
 // Problem 1
 case class Product[A, B](a: A, b: B)
 
@@ -40,29 +103,26 @@ given Bifunctor[Product] with
       case Product(a, c) => Product(f(a), g(c))
 
 // Problem 2
-type Identity[A] = A
-type Const[A, B] = A
 type MyOption[A] = Either[Const[Unit, A], Identity[A]]
 
 def to[A](a: Option[A]): MyOption[A] = a match
-  case None    => Left(())
-  case Some(a) => Right(a)
+  case None    => Left(Const(()))
+  case Some(a) => Right(Identity(a))
 
 def from[A](a: MyOption[A]): Option[A] = a match
-  case Left(_)  => None
-  case Right(a) => Some(a)
+  case Left(_)            => None
+  case Right(Identity(a)) => Some(a)
 
 // Problem 3
 enum PreList[+A, +B]:
   case Nil
   case Const(a: A, b: B)
-import PreList.*
 
 given Bifunctor[PreList] with
   extension [A, C](fa: PreList[A, C])
     def bimap[B, D](f: A => B, g: C => D): PreList[B, D] = fa match
-      case Const(a, b) => Const(f(a), g(b))
-      case Nil         => Nil
+      case PreList.Const(a, b) => PreList.Const(f(a), g(b))
+      case PreList.Nil         => PreList.Nil
 
 // Problem 4
 case class K2[C, A, B](c: C)
