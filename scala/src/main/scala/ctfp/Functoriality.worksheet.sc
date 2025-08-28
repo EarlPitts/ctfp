@@ -43,6 +43,8 @@ Left(2).first(succ)
 case class Identity[A](a: A)
 case class Const[A, B](a: A)
 
+// (We will also need the Fixpoint for recursive types)
+
 // Both of them are functors:
 trait Functor[F[_]]:
   extension [A](fa: F[A]) def map[B](f: A => B): F[B]
@@ -59,7 +61,8 @@ Identity(2).map(_ + 3)
 Const[Int, Int](2).map(_ + 3)
 
 // We can express the composition of
-// two functors into a bifunctor
+// a bifunctor and two functors
+// into another bifunctor
 case class BiComp[BF[_, _], FU[_], GU[_], A, B](comp: BF[FU[A], GU[B]])
 
 type BestOption[A, B] = BiComp[Either, [C] =>> Const[Unit, C], Identity, A, B]
@@ -93,6 +96,46 @@ someInt.second(_ + 2)
 
 // In scala there are libs for this like
 // shapeless and kittens (based on shapeless)
+
+trait Monad[M[_]: Functor]:
+  extension [A](ma: M[A])
+    def flatMap[B](f: A => M[B]): M[B]
+  extension [A](a: A)
+    def pure: M[A]
+
+type Writer[A] = Tuple2[String, A]
+
+given Functor[Writer] with
+  extension [A](fa: Writer[A])
+    def map[B](f: A => B): Writer[B] = fa match
+      case (str, a) => (str, f(a))
+
+given Monad[Writer] with
+  extension [A](ma: Writer[A])
+    def flatMap[B](f: A => Writer[B]): Writer[B] = ma match
+      case (str, a) => f(a) match
+        case (str2, b) => (str ++ str2, b)
+  extension [A](a: A)
+    def pure: Writer[A] = ("", a)
+
+("sajt", 2).map(_ + 3)
+
+def tell(str: String): Writer[Unit] = (str, ())
+
+val f: Writer[Int] = for
+  a <- 2.pure
+  _ <- tell("kecske")
+  b <- 3.pure
+  // _ <- tell("sajt")
+yield a + b
+
+("sajt", 2).flatMap(a => ("kecske", 3).map(b => (a + b)))
+
+val x = Some(3)
+
+for
+  a <- x
+yield a
 
 // Problem 1
 case class Product[A, B](a: A, b: B)
