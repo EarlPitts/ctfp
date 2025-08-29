@@ -169,12 +169,12 @@ def from[A](a: MyOption[A]): Option[A] = a match
 // Problem 3
 enum PreList[+A, +B]:
   case Nil
-  case Const(a: A, b: B)
+  case Cons(a: A, b: B)
 
 given Bifunctor[PreList] with
   extension [A, C](fa: PreList[A, C])
     def bimap[B, D](f: A => B, g: C => D): PreList[B, D] = fa match
-      case PreList.Const(a, b) => PreList.Const(f(a), g(b))
+      case PreList.Cons(a, b) => PreList.Cons(f(a), g(b))
       case PreList.Nil         => PreList.Nil
 
 // Problem 4
