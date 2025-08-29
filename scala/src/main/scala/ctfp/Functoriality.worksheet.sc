@@ -97,45 +97,62 @@ someInt.second(_ + 2)
 // In scala there are libs for this like
 // shapeless and kittens (based on shapeless)
 
-trait Monad[M[_]: Functor]:
+// Previously we have seen the Writer Kleisli category
+// (We would usually require M to already have a
+// Functor instance)
+trait Monad[M[_]]:
   extension [A](ma: M[A])
     def flatMap[B](f: A => M[B]): M[B]
-  extension [A](a: A)
-    def pure: M[A]
+    def >>[B](mb: M[B]): M[B] = ma.flatMap(_ => mb)
+  extension [A](a: A) def pure: M[A]
+  extension [A, B](fa: A => M[B])
+    def >=>[C]: (B => M[C]) => (A => M[C]) = f => a => fa(a).flatMap(f)
 
-type Writer[A] = Tuple2[String, A]
+type Writer[A] = Tuple2[A, String]
 
-given Functor[Writer] with
-  extension [A](fa: Writer[A])
-    def map[B](f: A => B): Writer[B] = fa match
-      case (str, a) => (str, f(a))
-
+// Writer has a Monad instance
 given Monad[Writer] with
   extension [A](ma: Writer[A])
     def flatMap[B](f: A => Writer[B]): Writer[B] = ma match
-      case (str, a) => f(a) match
-        case (str2, b) => (str ++ str2, b)
-  extension [A](a: A)
-    def pure: Writer[A] = ("", a)
+      case (a, str) =>
+        f(a) match
+          case (b, str2) => (b, str ++ str2)
+  extension [A](a: A) def pure: Writer[A] = (a, "")
 
-("sajt", 2).map(_ + 3)
+// If we already have a Kleisli category
+// (basically a Monad), we can implement
+// map in terms of monadic operators
+// (the kleisli fish and pure)
+def fmap[M[_]: Monad, A, B](f: A => B): M[A] => M[B] =
+  identity[M[A]] >=> (x => f(x).pure)
 
-def tell(str: String): Writer[Unit] = (str, ())
+// We can lift the string length function
+// inside the context of the Writer functor
+val len = fmap[Writer, String, Int](_.length)
 
-val f: Writer[Int] = for
-  a <- 2.pure
-  _ <- tell("kecske")
-  b <- 3.pure
-  // _ <- tell("sajt")
-yield a + b
+len("sajt".pure)
 
-("sajt", 2).flatMap(a => ("kecske", 3).map(b => (a + b)))
+// Covariant and Contravariant functors were
+// already mentioned in the previous (Functors) worksheet
 
-val x = Some(3)
+// Profunctors
+trait Profunctor[F[_, _]]:
+  extension [B, C](fa: F[B, C])
+    def dimap[A, D](f: A => B, g: C => D): F[A, D] = fa.lmap(f).rmap(g)
+    def lmap[A](f: A => B): F[A, C] // = dimap(f, identity)
+    def rmap[D](g: C => D): F[B, D] // = dimap(identity, g)
 
-for
-  a <- x
-yield a
+given Profunctor[Function1] with
+  extension [B, C](bd: Function1[B, C])
+    def lmap[A](ab: A => B): Function1[A, C] = bd compose ab // a => fa(f(a))
+    def rmap[D](cd: C => D): Function1[B, D] = cd compose bd // b => g(fa(b))
+
+// Questions:
+// Can every functor be composed with every other one?
+// If so, how to show this in code? (Monad transformers)
+// Can Bifunctors also be composed like this?
+// What's the relation between the category theoretical
+// composition, and it's representation in code?
 
 // Problem 1
 case class Product[A, B](a: A, b: B)
