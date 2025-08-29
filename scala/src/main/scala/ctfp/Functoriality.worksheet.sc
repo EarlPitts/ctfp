@@ -147,13 +147,6 @@ given Profunctor[Function1] with
     def lmap[A](ab: A => B): Function1[A, C] = bd compose ab // a => fa(f(a))
     def rmap[D](cd: C => D): Function1[B, D] = cd compose bd // b => g(fa(b))
 
-// Questions:
-// Can every functor be composed with every other one?
-// If so, how to show this in code? (Monad transformers)
-// Can Bifunctors also be composed like this?
-// What's the relation between the category theoretical
-// composition, and it's representation in code?
-
 // Problem 1
 case class Product[A, B](a: A, b: B)
 
